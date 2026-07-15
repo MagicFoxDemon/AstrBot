@@ -1,3 +1,6 @@
+import os
+
+import aiohttp
 from sqlalchemy import case, func, select
 from sqlmodel import col
 
@@ -20,6 +23,7 @@ THIRD_PARTY_AGENT_RUNNER_KEY = {
     "coze": "coze_conversation_id",
     "dashscope": "dashscope_conversation_id",
     DEERFLOW_PROVIDER_TYPE: DEERFLOW_THREAD_ID_KEY,
+    "companion": "companion_conversation_id",
 }
 THIRD_PARTY_AGENT_RUNNER_STR = ", ".join(THIRD_PARTY_AGENT_RUNNER_KEY.keys())
 
@@ -84,11 +88,44 @@ async def _cleanup_deerflow_thread_if_present(
         )
 
 
+async def _reset_companion_context(umo: str) -> None:
+    """把 /reset 转发给 ③ 的 POST /sns/reset（打 cutoff，不删消息、不动长期记忆）。
+
+    umo 形如 `platform:MessageType:id`，据此拼出 ③ 需要的会话元数据。
+    """
+    base = (
+        os.environ.get("COMPANION_AGENT_BASE") or "http://127.0.0.1:9560"
+    ).rstrip("/")
+    key = os.environ.get("COMPANION_API_KEY", "")
+    parts = umo.split(":")
+    is_group = "group" in parts[1].lower() if len(parts) > 1 else False
+    sid = ":".join(parts[2:]) if len(parts) > 2 else ""
+    payload = {
+        "message_type": "group" if is_group else "private",
+        "session_id": sid,
+        "sender": {"id": sid},  # 私聊时 sid 就是对方 qq
+        "api_key": key,
+    }
+    try:
+        async with aiohttp.ClientSession() as s:
+            await s.post(
+                f"{base}/sns/reset",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=15),
+            )
+    except Exception as e:
+        logger.warning("Failed to forward /reset to companion agent: %s", e)
+
+
 async def _clear_third_party_agent_runner_state(
     context: star.Context,
     umo: str,
     agent_runner_type: str,
 ) -> None:
+    if agent_runner_type == "companion":
+        await _reset_companion_context(umo)
+        return
+
     session_key = THIRD_PARTY_AGENT_RUNNER_KEY.get(agent_runner_type)
     if not session_key:
         return

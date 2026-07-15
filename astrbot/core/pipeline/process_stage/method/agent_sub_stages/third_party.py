@@ -4,6 +4,9 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from typing import TYPE_CHECKING
 
 from astrbot.core import astrbot_config, logger
+from astrbot.core.agent.runners.companion.companion_agent_runner import (
+    CompanionAgentRunner,
+)
 from astrbot.core.agent.runners.coze.coze_agent_runner import CozeAgentRunner
 from astrbot.core.agent.runners.dashscope.dashscope_agent_runner import (
     DashscopeAgentRunner,
@@ -49,6 +52,7 @@ AGENT_RUNNER_TYPE_KEY = {
     "coze": "coze_agent_runner_provider_id",
     "dashscope": "dashscope_agent_runner_provider_id",
     DEERFLOW_PROVIDER_TYPE: DEERFLOW_AGENT_RUNNER_PROVIDER_ID_KEY,
+    "companion": "companion_agent_runner_provider_id",
 }
 THIRD_PARTY_RUNNER_ERROR_EXTRA_KEY = "_third_party_runner_error"
 STREAM_CONSUMPTION_CLOSE_TIMEOUT_SEC = 30
@@ -339,6 +343,8 @@ class ThirdPartyAgentSubStage(Stage):
             runner = DashscopeAgentRunner[AstrAgentContext]()
         elif self.runner_type == DEERFLOW_PROVIDER_TYPE:
             runner = DeerFlowAgentRunner[AstrAgentContext]()
+        elif self.runner_type == "companion":
+            runner = CompanionAgentRunner[AstrAgentContext]()
         else:
             raise ValueError(
                 f"Unsupported third party agent runner type: {self.runner_type}",

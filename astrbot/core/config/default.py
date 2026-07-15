@@ -155,6 +155,7 @@ DEFAULT_CONFIG = {
         "coze_agent_runner_provider_id": "",
         "dashscope_agent_runner_provider_id": "",
         "deerflow_agent_runner_provider_id": "",
+        "companion_agent_runner_provider_id": "",
         "unsupported_streaming_strategy": "realtime_segmenting",
         "reachability_check": False,
         "max_agent_step": 30,
@@ -1561,6 +1562,15 @@ CONFIG_METADATA_2 = {
                         "timeout": 300,
                         "proxy": "",
                     },
+                    "Companion Agent": {
+                        "id": "companion",
+                        "provider": "companion",
+                        "type": "companion",
+                        "provider_type": "agent_runner",
+                        "enable": True,
+                        "companion_agent_base": "http://127.0.0.1:9560",
+                        "companion_api_key": "",
+                    },
                     "FastGPT": {
                         "id": "fastgpt",
                         "provider": "fastgpt",
@@ -2731,6 +2741,16 @@ CONFIG_METADATA_2 = {
                         "type": "string",
                         "hint": "Coze API 的基础 URL 地址，默认为 https://api.coze.cn",
                     },
+                    "companion_agent_base": {
+                        "description": "Companion Agent 地址",
+                        "type": "string",
+                        "hint": "companion-agent(③)的地址。AstrBot 在宿主机跑时用 http://127.0.0.1:9560；在 docker 里跑且同网络时用 http://companion-agent:9560。",
+                    },
+                    "companion_api_key": {
+                        "description": "Companion API Key",
+                        "type": "string",
+                        "hint": "③ 的 SNS_API_KEY。留空则回退到环境变量 COMPANION_API_KEY。",
+                    },
                     "deerflow_api_base": {
                         "description": "API Base URL",
                         "type": "string",
@@ -2864,6 +2884,9 @@ CONFIG_METADATA_2 = {
                         "type": "string",
                     },
                     "deerflow_agent_runner_provider_id": {
+                        "type": "string",
+                    },
+                    "companion_agent_runner_provider_id": {
                         "type": "string",
                     },
                     "max_agent_step": {
@@ -3094,13 +3117,21 @@ CONFIG_METADATA_3 = {
                     "provider_settings.agent_runner_type": {
                         "description": "执行器",
                         "type": "string",
-                        "options": ["local", "dify", "coze", "dashscope", "deerflow"],
+                        "options": [
+                            "local",
+                            "dify",
+                            "coze",
+                            "dashscope",
+                            "deerflow",
+                            "companion",
+                        ],
                         "labels": [
                             "内置 Agent",
                             "Dify",
                             "Coze",
                             "阿里云百炼应用",
                             "DeerFlow",
+                            "Companion Agent",
                         ],
                         "condition": {
                             "provider_settings.enable": True,
@@ -3139,6 +3170,15 @@ CONFIG_METADATA_3 = {
                         "_special": "select_agent_runner_provider:deerflow",
                         "condition": {
                             "provider_settings.agent_runner_type": "deerflow",
+                            "provider_settings.enable": True,
+                        },
+                    },
+                    "provider_settings.companion_agent_runner_provider_id": {
+                        "description": "Companion Agent 执行器提供商 ID",
+                        "type": "string",
+                        "_special": "select_agent_runner_provider:companion",
+                        "condition": {
+                            "provider_settings.agent_runner_type": "companion",
                             "provider_settings.enable": True,
                         },
                     },
